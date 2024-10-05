@@ -1,0 +1,56 @@
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { UserService } from './user.service';
+import removeProperties from 'src/utils/removeProperties';
+import { CustomRequest } from 'src/utils/customRequest';
+import { Public } from '../auth/decorators/public.decorator';
+import { IsValidIdPipe } from 'src/utils/validIdPipe';
+import { GiveRoleDto } from './dto/giveRole.dto';
+import { ApiKeyGuard } from '../auth/guards/apikey.guard';
+
+@Controller('users')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Get()
+  async findAllUsers() {
+    const users = await this.userService.users({});
+    const usersWithoutPassword = users.map((user) => {
+      return removeProperties(user, 'password');
+    });
+    return usersWithoutPassword;
+  }
+
+  @Get('me')
+  async findMe(@Request() req: CustomRequest) {
+    const user = await this.userService.user({
+      id: req.user.id,
+    });
+    return removeProperties(user, 'password');
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Public()
+  @Post(':id/giveRole')
+  async giveRole(
+    @Param('id', IsValidIdPipe) id: number,
+    @Body() dto: GiveRoleDto,
+  ) {
+    const user = await this.userService.user({
+      id: id,
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const result = await this.userService.giveRole(id, dto);
+    return result;
+  }
+}
