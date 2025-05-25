@@ -1,0 +1,12 @@
+schema: 'src/schema.graphql'
+documents:
+  - '../../packages/common/src/graphql/**/*.ts'
+generates:
+  src/@generated/codegen/API.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typed-document-node'
+    config:
+      documentMode: graphQLTag
+      gqlImport: graphql-tag
